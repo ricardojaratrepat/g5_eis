@@ -1,0 +1,47 @@
+body {
+    margin: 0;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f0f0;
+}
+
+.toolbar {
+    padding: 10px;
+    background-color: #ddd;
+    border-bottom: 1px solid #ccc;
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.toolbar button {
+    padding: 8px 15px;
+    margin: 0 5px;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+}
+
+.toolbar button.active {
+    background-color: #a0a0a0;
+    font-weight: bold;
+}
+
+#userCount {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+#whiteboard {
+    border: 1px solid #000;
+    cursor: crosshair;
+    background-color: #fff;
+    margin-top: 10px;
+}
