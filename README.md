@@ -2,6 +2,11 @@
 
 A simple real-time collaborative whiteboard application built with Node.js, Express, and Socket.IO. It is meant to be used as a wizard of Oz, by being overlayed over a live video feed of parking lots.
 
+## 🗒️ Useful Documentation
+
+1. [Express.JS Docs]( https://expressjs.com/ )
+2. [Socket IO Docs]( https://socket.io/docs/v4/ )
+
 ## 🛠️ How to Run Locally
 
 Follow these steps to get the application running on your local machine:
