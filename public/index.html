@@ -14,6 +14,17 @@
     <div id="userCount">Users: 0</div>
     <canvas id="whiteboard"></canvas>
 
+    <button id="adminBtn" class="admin-button">Iniciar como admin</button>
+
+    <div id="adminLogin" class="admin-login hidden">
+        <div class="login-box">
+            <label for="adminCode">Código de administrador:</label>
+            <input type="password" id="adminCode" placeholder="Escribe el código">
+            <button id="submitAdmin">Entrar</button>
+        </div>
+    </div>
+
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
 </body>

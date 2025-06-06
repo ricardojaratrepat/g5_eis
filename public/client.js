@@ -151,4 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Request drawing history when connected
   sendMessage('REQUEST_HISTORY', {});
+
+  document.getElementById('adminBtn').addEventListener('click', () => {
+      document.getElementById('adminLogin').classList.remove('hidden');
+  });
+
+  document.getElementById('submitAdmin').addEventListener('click', () => {
+      const code = document.getElementById('adminCode').value;
+      if (code === '1234') { // Cambiar '1234' por el código real
+          alert('Entraste como administrador');
+          // Redirige o cambia vista aquí si es necesario
+      } else {
+          alert('Código incorrecto');
+      }
+  });
+
 });
