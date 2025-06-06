@@ -14,10 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const eraseColor = '#FFFFFF'; // White, same as canvas background
   const lineWidth = 5;
   const eraserSize = 20;
+  drawBtn.disabled = true;
+  eraseBtn.disabled = true;
+
 
   // Canvas dimensions
   canvas.width = window.innerWidth * 0.9;
   canvas.height = window.innerHeight * 0.8;
+
+  // Admin variables
+  let isAdmin = false;
 
   function setMode(newMode) {
     currentMode = newMode;
@@ -81,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   canvas.addEventListener('mousedown', (e) => {
+    if (!isAdmin) return; // Only allow drawing if admin
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     lastX = e.clientX - rect.left;
@@ -92,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   canvas.addEventListener('mousemove', (e) => {
+    if (!isAdmin) return; // Only allow drawing if admin
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const currentX = e.clientX - rect.left;
@@ -107,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   canvas.addEventListener('mouseup', () => {
+    if (!isAdmin) return; // Only allow drawing if admin
     if (drawing) {
       drawing = false;
     }
@@ -152,18 +161,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // Request drawing history when connected
   sendMessage('REQUEST_HISTORY', {});
 
+  //Admin functionality
   document.getElementById('adminBtn').addEventListener('click', () => {
       document.getElementById('adminLogin').classList.remove('hidden');
   });
 
   document.getElementById('submitAdmin').addEventListener('click', () => {
-      const code = document.getElementById('adminCode').value;
-      if (code === '1234') { // Cambiar '1234' por el código real
-          alert('Entraste como administrador');
-          // Redirige o cambia vista aquí si es necesario
-      } else {
-          alert('Código incorrecto');
-      }
-  });
+    const code = document.getElementById('adminCode').value;
+    if (code === '1234') { // Cambia este código según necesites
+        isAdmin = true;
+        drawBtn.disabled = false;
+        eraseBtn.disabled = false;
+        alert('Entraste como administrador');
+        document.getElementById('adminLogin').classList.add('hidden');
+    } else {
+        alert('Código incorrecto');
+    }
+});
+
 
 });
