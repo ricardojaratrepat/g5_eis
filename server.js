@@ -25,7 +25,7 @@ const messageHandlers = {
     // TODO: Identify and remove specific drawing objects
     // for now it just clears a rectangular area
     drawingHistory.push(data);
-    socket.boradcast.emit('erase', data);
+    socket.broadcast.emit('erase', data);
   },
   REQUEST_HISTORY: (socket) => {
     socket.emit('drawingHistory', drawingHistory)
@@ -54,7 +54,7 @@ io.on('connection', (socket) => {
   });
 
   // This handles disconnects
-  socket.on('disonnect', () => {
+  socket.on('disconnect', () => {
     connectedUsers--;
     io.emit('userCount', connectedUsers);
     console.log('Client disconnected. Users:', connectedUsers);
