@@ -6,11 +6,17 @@
     <title>Collaborative Whiteboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body>    
     <div class="toolbar">
-        <button id="drawBtn">Draw</button>
-        <button id="eraseBtn">Erase</button>
+        <div class="toolbar-left">
+            <button class="opinion-button" onclick="location.href='form.html'">Dar mi opinión</button>
+        </div>
+        <div class="toolbar-center">
+            <button id="drawBtn">Draw</button>
+            <button id="eraseBtn">Erase</button>
+        </div>
     </div>
+
     <div id="userCount">Users: 0</div>
     <canvas id="whiteboard"></canvas>
 
