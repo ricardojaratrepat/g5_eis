@@ -8,13 +8,41 @@ body {
 }
 
 .toolbar {
+    display: flex;
+    justify-content: center; /* centramos en general */
+    align-items: center;
     padding: 10px;
     background-color: #ddd;
     border-bottom: 1px solid #ccc;
     width: 100%;
-    text-align: center;
     box-sizing: border-box;
+    position: relative;
 }
+
+.toolbar-left {
+    position: absolute;
+    left: 10px;
+}
+
+.toolbar-center {
+    display: flex;
+    gap: 10px;
+}
+
+.opinion-button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: 1px solid #3e8e41;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.opinion-button:hover {
+    background-color: #45a049;
+}
+
 
 .toolbar button {
     padding: 8px 15px;
