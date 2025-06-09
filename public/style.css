@@ -15,6 +15,7 @@ body {
     background-color: #ddd;
     border-bottom: 1px solid #ccc;
     width: 100%;
+    height: 50px;
     box-sizing: border-box;
     position: relative;
 }
@@ -87,6 +88,7 @@ body {
 }
 
 .login-box {
+    position: relative;
     background-color: white;
     padding: 30px;
     border-radius: 8px;
@@ -103,6 +105,16 @@ body {
     display: none;
 }
 
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
 
 #userCount {
     position: absolute;
