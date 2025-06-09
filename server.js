@@ -29,9 +29,14 @@ const messageHandlers = {
   },
   REQUEST_HISTORY: (socket) => {
     socket.emit('drawingHistory', drawingHistory)
+  },
+  
+  DRAW_RECTANGLE: (socket, data) => {
+    drawingHistory.push({ type: 'DRAW_RECTANGLE', payload: data });
+    socket.broadcast.emit('drawRectangle', data);
   }
+  
   // More messages go here as the app grows
-
 };
 
 io.on('connection', (socket) => {
