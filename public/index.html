@@ -11,19 +11,24 @@
         <div class="toolbar-left">
             <button class="opinion-button" onclick="location.href='form.html'">Dar mi opinión</button>
         </div>
-        <div class="toolbar-center">
+        
+        <div id="toolbar_button" class="toolbar-center hidden">
             <button id="drawBtn">Draw</button>
             <button id="eraseBtn">Erase</button>
         </div>
+        
+        <div id="userCount">
+            Users: 0
+        </div>
     </div>
 
-    <div id="userCount">Users: 0</div>
     <canvas id="whiteboard"></canvas>
 
     <button id="adminBtn" class="admin-button">Iniciar como admin</button>
 
     <div id="adminLogin" class="admin-login hidden">
         <div class="login-box">
+            <button class="close-btn" id="closeAdminLogin">x</button>
             <label for="adminCode">Código de administrador:</label>
             <input type="password" id="adminCode" placeholder="Escribe el código">
             <button id="submitAdmin">Entrar</button>
