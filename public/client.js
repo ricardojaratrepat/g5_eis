@@ -1,22 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
   const socket = io();
-
+  
   const canvas = document.getElementById('whiteboard');
   const ctx = canvas.getContext('2d');
   const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
   const eraseBtn = document.getElementById('eraseBtn');
+  const rectBtn = document.getElementById('rectBtn');
 
+  
   let drawing = false;
   let currentMode = 'draw'; // 'draw' or 'erase'
-  let lastX, lastY;
+  let lastX, lastY, startRectX, startRectY;
+  
   const drawColor = 'lightgreen';
   const eraseColor = '#FFFFFF'; // White, same as canvas background
   const lineWidth = 5;
   const eraserSize = 20;
-  drawBtn.disabled = true;
-  eraseBtn.disabled = true;
-
 
   // Canvas dimensions
   canvas.width = window.innerWidth * 0.9;
@@ -29,11 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMode = newMode;
     drawBtn.classList.toggle('active', newMode === 'draw');
     eraseBtn.classList.toggle('active', newMode === 'erase');
+    rectBtn.classList.toggle('active', newMode === 'rectangle');
     console.log("Mode set to:", currentMode);
   }
 
   drawBtn.addEventListener('click', () => setMode('draw'));
   eraseBtn.addEventListener('click', () => setMode('erase'));
+  rectBtn.addEventListener('click', () => setMode('rectangle'));
   setMode('draw'); // Default mode
 
   // Function to send messages to the server
@@ -85,16 +87,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function drawRect(x, y, width, height, color, lineWidth, emit = false) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(x, y, width, height);
+    ctx.closePath();
+
+    if (emit) {
+      console.log('Enviando rectángulo al servidor:', { x, y, width, height });
+      sendMessage('DRAW_RECTANGLE', {
+        x, y, width, height,
+        color,
+        lineWidth,
+        isEraser: false
+      });
+    }
+  }
 
   canvas.addEventListener('mousedown', (e) => {
-    if (!isAdmin) return; // Only allow drawing if admin
-    drawing = true;
+    if (!isAdmin) return;
     const rect = canvas.getBoundingClientRect();
-    lastX = e.clientX - rect.left;
-    lastY = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    if (currentMode === 'erase') {
-      eraseSquare(lastX, lastY, eraserSize, true);
+    drawing = true;
+
+    if (currentMode === 'rectangle') {
+      startRectX = x;
+      startRectY = y;
+    } else {
+      lastX = x;
+      lastY = y;
+      if (currentMode === 'erase') {
+        eraseSquare(x, y, eraserSize, true);
+      }
     }
   });
 
@@ -114,15 +141,27 @@ document.addEventListener('DOMContentLoaded', () => {
     lastY = currentY;
   });
 
-  canvas.addEventListener('mouseup', () => {
-    if (!isAdmin) return; // Only allow drawing if admin
-    if (drawing) {
-      drawing = false;
-    }
-  });
+  canvas.addEventListener('mouseup', (e) => {
+  if (!isAdmin || !drawing) return;
+  drawing = false;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  console.log('mouseup mode:', currentMode); // DEBUG
+
+  if (currentMode === 'rectangle') {
+    const width = x - startRectX;
+    const height = y - startRectY;
+    console.log('Rectángulo capturado:', { x: startRectX, y: startRectY, width, height }); // DEBUG
+    drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
+  }
+});
 
   canvas.addEventListener('mouseout', () => {
     // Optional: stop drawing if mouse leaves canvas
+    drawing = false;
   });
 
   // Socket event listeners
@@ -139,6 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  socket.on('drawRectangle', (data) => {
+    drawRect(data.x, data.y, data.width, data.height, data.color, data.lineWidth, false);
+  });
+
+
   socket.on('erase', (data) => {
     if (data.isEraser && data.hasOwnProperty('size')) { // Check if it's a square eraser action
       eraseSquare(data.x + data.size / 2, data.y + data.size / 2, data.size, false);
@@ -154,6 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
         drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
       } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
         eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
+      } else if (item.type === 'DRAW_RECTANGLE') {
+        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
       }
     });
   });
@@ -170,8 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const code = document.getElementById('adminCode').value;
     if (code === '1234') { // Cambia este código según necesites
         isAdmin = true;
-        drawBtn.disabled = false;
-        eraseBtn.disabled = false;
         alert('Entraste como administrador');
         document.getElementById('adminLogin').classList.add('hidden');
         document.getElementById('adminBtn').classList.add('hidden');
@@ -180,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         alert('Código incorrecto');
     }
-});
+  });
 
   document.getElementById('closeAdminLogin').addEventListener('click', () => {
     document.getElementById('adminLogin').classList.add('hidden');
