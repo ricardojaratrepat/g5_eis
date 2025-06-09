@@ -174,10 +174,17 @@ document.addEventListener('DOMContentLoaded', () => {
         eraseBtn.disabled = false;
         alert('Entraste como administrador');
         document.getElementById('adminLogin').classList.add('hidden');
+        document.getElementById('adminBtn').classList.add('hidden');
+        document.getElementById('adminCode').value = '';
+        document.getElementById('toolbar_button').classList.remove('hidden');
     } else {
         alert('Código incorrecto');
     }
 });
+
+  document.getElementById('closeAdminLogin').addEventListener('click', () => {
+    document.getElementById('adminLogin').classList.add('hidden');
+  });
 
 
 });
