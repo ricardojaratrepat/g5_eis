@@ -47,7 +47,7 @@ const messageHandlers = {
 io.on('connection', (socket) => {
   connectedUsers++;
   io.emit('userCount', connectedUsers);
-  console.log('New client connected. Users:', connectedUsers);
+  console.log('Nuevo cliente conectado. Usuarios:', connectedUsers);
 
   // Send drawing history to new client
   messageHandlers.REQUEST_HISTORY(socket);
@@ -59,7 +59,7 @@ io.on('connection', (socket) => {
     if (handler) {
       handler(socket, payload);
     } else {
-      console.log(`No handler for message type: ${type}`);
+      console.log(`No hay manejador para el tipo de mensaje: ${type}`);
     }
   });
 
@@ -67,11 +67,11 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     connectedUsers--;
     io.emit('userCount', connectedUsers);
-    console.log('Client disconnected. Users:', connectedUsers);
+    console.log('Cliente desconectado. Usuarios:', connectedUsers);
   });
 
 })
 
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 })

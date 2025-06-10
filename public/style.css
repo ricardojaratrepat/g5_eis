@@ -1,78 +1,173 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #10b981;
+    --secondary-hover: #059669;
+    --danger-color: #ef4444;
+    --danger-hover: #dc2626;
+    --background-color: #f8fafc;
+    --surface-color: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
-    font-family: sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #f0f0f0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--text-primary);
 }
 
 .toolbar {
     display: flex;
-    justify-content: center; /* centramos en general */
+    justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    background-color: #ddd;
-    border-bottom: 1px solid #ccc;
+    padding: 16px 24px;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
     width: 100%;
-    height: 50px;
-    box-sizing: border-box;
-    position: relative;
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .toolbar-left {
-    position: absolute;
-    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.app-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .toolbar-center {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    background: var(--background-color);
+    padding: 8px;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
 }
 
 .opinion-button {
-    padding: 8px 15px;
-    background-color: #4CAF50;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--secondary-color), var(--secondary-hover));
     color: white;
-    border: 1px solid #3e8e41;
-    border-radius: 4px;
+    border: none;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .opinion-button:hover {
-    background-color: #45a049;
+    background: linear-gradient(135deg, var(--secondary-hover), var(--secondary-color));
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
-
-.toolbar button {
-    padding: 8px 15px;
-    margin: 0 5px;
+.tool-btn {
+    padding: 10px 16px;
+    background: var(--surface-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     cursor: pointer;
-    border: 1px solid #bbb;
-    border-radius: 4px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 90px;
+    justify-content: center;
 }
 
-.toolbar button.active {
-    background-color: #a0a0a0;
-    font-weight: bold;
+.tool-btn:hover {
+    background: var(--background-color);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.tool-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-icon {
+    font-size: 16px;
+}
+
+.user-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.counter-icon {
+    font-size: 16px;
 }
 
 .admin-button {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 10px 15px;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
     font-size: 14px;
-    background-color: #333;
+    font-weight: 500;
+    background: linear-gradient(135deg, var(--text-primary), #374151);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--border-radius-lg);
     cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
 }
 
 .admin-button:hover {
-    background-color: #555;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 .admin-login {
@@ -81,63 +176,111 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 2000;
 }
 
 .login-box {
     position: relative;
-    background-color: white;
-    padding: 30px;
-    border-radius: 8px;
+    background: var(--surface-color);
+    padding: 32px;
+    border-radius: var(--border-radius-lg);
     text-align: center;
+    box-shadow: var(--shadow-lg);
+    min-width: 320px;
+    border: 1px solid var(--border-color);
+}
+
+.login-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.login-box p {
+    margin: 0 0 24px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
 .login-box input {
-    padding: 10px;
-    margin: 10px 0;
     width: 100%;
+    padding: 12px 16px;
+    margin: 0 0 20px 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: var(--background-color);
 }
 
-.hidden {
-    display: none;
+.login-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
 }
 
 .close-btn {
     position: absolute;
-    top: 8px;
-    right: 10px;
+    top: 12px;
+    right: 16px;
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
-    color: #333;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
 }
 
-#userCount {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 5px 10px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+.close-btn:hover {
+    background: var(--background-color);
+    color: var(--text-primary);
 }
 
-#whiteboard {
-    border: 1px solid #000;
-    cursor: crosshair;
-    background-color: transparent;
-    margin-top: 10px;
+.hidden {
+    display: none !important;
 }
 
 #canvasContainer {
     position: relative;
-    width: 90vw;
-    height: 80vh;
-    margin: auto;
+    width: 95vw;
+    max-width: 1200px;
+    height: 75vh;
+    margin: 20px auto;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    background: var(--surface-color);
+    touch-action: none; /* Prevent touch scrolling on mobile */
 }
 
 #backgroundCanvas,
@@ -147,4 +290,131 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    cursor: crosshair;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: pixelated;
+}
+
+.success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 3000;
+    animation: slideInRight 0.5s ease-out;
+}
+
+.success-notification.hidden {
+    display: none;
+}
+
+.notification-content {
+    background: linear-gradient(135deg, var(--secondary-color), var(--secondary-hover));
+    color: white;
+    padding: 20px 24px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 300px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.notification-icon {
+    font-size: 24px;
+    animation: bounce 0.6s ease-in-out;
+}
+
+.notification-text h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.notification-text p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .toolbar {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .toolbar-left {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .app-title {
+        font-size: 20px;
+    }
+    
+    .toolbar-center {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .tool-btn {
+        min-width: 80px;
+        font-size: 12px;
+    }
+    
+    .admin-button {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 12px;
+    }
+    
+    #canvasContainer {
+        width: 95vw;
+        height: 60vh;
+        margin: 16px auto;
+        touch-action: none;
+    }
+    
+    #backgroundCanvas,
+    #whiteboard {
+        cursor: crosshair;
+    }
 }

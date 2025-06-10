@@ -21,21 +21,56 @@ document.addEventListener('DOMContentLoaded', () => {
   const eraserSize = 20;
 
   // Canvas dimensions
-  canvas.width = window.innerWidth * 0.9;
-  canvas.height = window.innerHeight * 0.8;
-  backgroundCanvas.width = canvas.width;
-  backgroundCanvas.height = canvas.height;
+  function setupCanvas() {
+    const container = document.getElementById('canvasContainer');
+    const containerRect = container.getBoundingClientRect();
+    
+    // Set canvas size to match container
+    const width = containerRect.width;
+    const height = containerRect.height;
+    
+    // Set actual canvas size (accounting for device pixel ratio)
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    canvas.width = width * devicePixelRatio;
+    canvas.height = height * devicePixelRatio;
+    backgroundCanvas.width = width * devicePixelRatio;
+    backgroundCanvas.height = height * devicePixelRatio;
+    
+    // Set display size
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    backgroundCanvas.style.width = width + 'px';
+    backgroundCanvas.style.height = height + 'px';
+    
+    // Scale context for high-DPI displays
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    backgroundCtx.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Store canvas dimensions for coordinate calculations
+    canvas.displayWidth = width;
+    canvas.displayHeight = height;
+    canvas.scaleFactor = devicePixelRatio;
+  }
+
+  // Initial setup
+  setupCanvas();
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    setupCanvas();
+    // Request redraw from server
+    sendMessage('REQUEST_HISTORY', {});
+  });
 
   function setBackgroundImage(src) {
     const img = new Image();
     img.onload = () => {
-      backgroundCtx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
-      backgroundCtx.drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+      backgroundCtx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+      backgroundCtx.drawImage(img, 0, 0, canvas.displayWidth, canvas.displayHeight);
     };
     img.src = src;
   }
-
-
 
   // Admin variables
   let isAdmin = false;
@@ -45,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     drawBtn.classList.toggle('active', newMode === 'draw');
     eraseBtn.classList.toggle('active', newMode === 'erase');
     rectBtn.classList.toggle('active', newMode === 'rectangle');
-    console.log("Mode set to:", currentMode);
+    console.log("Modo establecido a:", currentMode);
   }
 
   drawBtn.addEventListener('click', () => setMode('draw'));
@@ -110,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-
   function drawRect(x, y, width, height, color, lineWidth, emit = false) {
     ctx.beginPath();
     ctx.strokeStyle = color;
@@ -129,11 +163,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.displayWidth / rect.width;
+    const scaleY = canvas.displayHeight / rect.height;
+    
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
   canvas.addEventListener('mousedown', (e) => {
     if (!isAdmin) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const x = pos.x;
+    const y = pos.y;
 
     drawing = true;
 
@@ -150,11 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   canvas.addEventListener('mousemove', (e) => {
-    if (!isAdmin) return; // Only allow drawing if admin
+    if (!isAdmin) return;
     if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const currentX = pos.x;
+    const currentY = pos.y;
 
     if (currentMode === 'draw') {
       drawLine(lastX, lastY, currentX, currentY, drawColor, lineWidth, true, false);
@@ -166,22 +211,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   canvas.addEventListener('mouseup', (e) => {
-  if (!isAdmin || !drawing) return;
-  drawing = false;
+    if (!isAdmin || !drawing) return;
+    drawing = false;
 
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const x = pos.x;
+    const y = pos.y;
 
-  console.log('mouseup mode:', currentMode); // DEBUG
-
-  if (currentMode === 'rectangle') {
-    const width = x - startRectX;
-    const height = y - startRectY;
-    console.log('Rectángulo capturado:', { x: startRectX, y: startRectY, width, height }); // DEBUG
-    drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
-  }
-});
+    if (currentMode === 'rectangle') {
+      const width = x - startRectX;
+      const height = y - startRectY;
+      drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
+    }
+  });
 
   canvas.addEventListener('mouseout', () => {
     // Optional: stop drawing if mouse leaves canvas
@@ -190,7 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Socket event listeners
   socket.on('userCount', (count) => {
-    userCountDisplay.textContent = `Users: ${count}`;
+    const counterText = document.querySelector('.counter-text');
+    if (counterText) {
+      counterText.textContent = `Usuarios: ${count}`;
+    } else {
+      userCountDisplay.textContent = `Usuarios: ${count}`;
+    }
   });
 
   socket.on('draw', (data) => {
@@ -206,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
     drawRect(data.x, data.y, data.width, data.height, data.color, data.lineWidth, false);
   });
 
-
   socket.on('erase', (data) => {
     if (data.isEraser && data.hasOwnProperty('size')) { // Check if it's a square eraser action
       eraseSquare(data.x + data.size / 2, data.y + data.size / 2, data.size, false);
@@ -216,9 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('drawingHistory', (history) => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before redrawing history
+    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+    // First, apply any background image from history
+    const backgroundItem = history.find(item => item.type === 'SET_BACKGROUND');
+    if (backgroundItem) {
+      setBackgroundImage(backgroundItem.payload.src);
+    }
+    
+    // Then draw all other elements
     history.forEach(item => {
-      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.isEraser && item.hasOwnProperty('x0'))) {
+      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
         drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
       } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
         eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
@@ -231,6 +284,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Request drawing history when connected
   sendMessage('REQUEST_HISTORY', {});
 
+  function showSuccessNotification() {
+    const notification = document.getElementById('successNotification');
+    notification.classList.remove('hidden');
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideOutRight 0.5s ease-in';
+      setTimeout(() => {
+        notification.classList.add('hidden');
+        notification.style.animation = '';
+      }, 500);
+    }, 4000);
+  }
+
   //Admin functionality
   document.getElementById('adminBtn').addEventListener('click', () => {
       document.getElementById('adminLogin').classList.remove('hidden');
@@ -240,13 +307,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const code = document.getElementById('adminCode').value;
     if (code === '1234') { // Cambia este código según necesites
         isAdmin = true;
-        alert('Entraste como administrador');
+        showSuccessNotification();
         document.getElementById('adminLogin').classList.add('hidden');
         document.getElementById('adminBtn').classList.add('hidden');
         document.getElementById('adminCode').value = '';
         document.getElementById('toolbar_button').classList.remove('hidden');
     } else {
-        alert('Código incorrecto');
+        alert('Código incorrecto. Por favor, inténtalo de nuevo.');
     }
   });
 
@@ -254,25 +321,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('adminLogin').classList.add('hidden');
   });
 
-  const bgInput = document.getElementById('bgInput');
+  const bgBtn = document.getElementById('bgBtn');
 
-  bgInput.classList.remove('hidden');
+  bgBtn.addEventListener('click', () => {
+    // Create a temporary file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const imageDataURL = event.target.result;
+        setBackgroundImage(imageDataURL);
 
-  bgInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const imageDataURL = event.target.result;
-      setBackgroundImage(imageDataURL);
-
-      // (Opcional) enviar a otros usuarios
-      socket.emit('message', {
-        type: 'SET_BACKGROUND',
-        payload: { src: imageDataURL }
-      });
-    };
-    reader.readAsDataURL(file);
+        // Send to other users
+        socket.emit('message', {
+          type: 'SET_BACKGROUND',
+          payload: { src: imageDataURL }
+        });
+      };
+      reader.readAsDataURL(file);
+      
+      // Clean up the temporary input
+      document.body.removeChild(fileInput);
+    });
+    
+    // Add to DOM temporarily and trigger click
+    document.body.appendChild(fileInput);
+    fileInput.click();
   });
 
   socket.on('setBackground', (data) => {
