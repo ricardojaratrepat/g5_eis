@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let drawing = false;
   let currentMode = 'draw'; // 'draw' or 'erase'
   let lastX, lastY, startRectX, startRectY;
+  let isDrawingRectangle = false;
   
   const drawColor = 'lightgreen';
   const eraseColor = '#FFFFFF'; // White, same as canvas background
@@ -163,6 +164,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function drawPreviewRect(startX, startY, currentX, currentY) {
+    const width = currentX - startX;
+    const height = currentY - startY;
+    
+    // Clear the entire canvas and redraw everything
+    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+    
+    // Redraw all history first
+    const history = JSON.parse(sessionStorage.getItem('drawingHistory') || '[]');
+    history.forEach(item => {
+      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
+        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
+      } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
+        eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
+      } else if (item.type === 'DRAW_RECTANGLE') {
+        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+      }
+    });
+    
+    // Draw preview rectangle with dashed line
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = 0.7;
+    ctx.strokeRect(startX, startY, width, height);
+    ctx.restore();
+  }
+
   function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.displayWidth / rect.width;
@@ -185,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentMode === 'rectangle') {
       startRectX = x;
       startRectY = y;
+      isDrawingRectangle = true;
     } else {
       lastX = x;
       lastY = y;
@@ -205,6 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
       drawLine(lastX, lastY, currentX, currentY, drawColor, lineWidth, true, false);
     } else if (currentMode === 'erase') {
       drawLine(lastX, lastY, currentX, currentY, eraseColor, eraserSize, true, true);
+    } else if (currentMode === 'rectangle' && isDrawingRectangle) {
+      drawPreviewRect(startRectX, startRectY, currentX, currentY);
     }
     lastX = currentX;
     lastY = currentY;
@@ -218,10 +251,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const x = pos.x;
     const y = pos.y;
 
-    if (currentMode === 'rectangle') {
+    if (currentMode === 'rectangle' && isDrawingRectangle) {
       const width = x - startRectX;
       const height = y - startRectY;
+      
+      // Clear preview and draw final rectangle
+      ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+      
+      // Redraw history
+      const history = JSON.parse(sessionStorage.getItem('drawingHistory') || '[]');
+      history.forEach(item => {
+        if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
+          drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
+        } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
+          eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
+        } else if (item.type === 'DRAW_RECTANGLE') {
+          drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+        }
+      });
+      
+      // Draw final rectangle
       drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
+      isDrawingRectangle = false;
     }
   });
 
@@ -262,6 +313,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('drawingHistory', (history) => {
+    // Store history in sessionStorage for preview functionality
+    sessionStorage.setItem('drawingHistory', JSON.stringify(history));
+    
     ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
     // First, apply any background image from history
     const backgroundItem = history.find(item => item.type === 'SET_BACKGROUND');

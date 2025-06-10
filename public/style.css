@@ -43,6 +43,7 @@ body {
     box-shadow: var(--shadow-sm);
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.95);
+    position: relative;
 }
 
 .toolbar-left {
@@ -68,6 +69,9 @@ body {
     padding: 8px;
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--border-color);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .opinion-button {
@@ -271,8 +275,8 @@ body {
 
 #canvasContainer {
     position: relative;
-    width: 95vw;
-    max-width: 1200px;
+    width: 98vw;
+    max-width: 1400px;
     height: 75vh;
     margin: 20px auto;
     border-radius: var(--border-radius-lg);
@@ -378,6 +382,7 @@ body {
         flex-direction: column;
         gap: 16px;
         padding: 16px;
+        position: relative;
     }
     
     .toolbar-left {
@@ -392,6 +397,9 @@ body {
     .toolbar-center {
         flex-wrap: wrap;
         justify-content: center;
+        position: static;
+        transform: none;
+        left: auto;
     }
     
     .tool-btn {
@@ -407,7 +415,7 @@ body {
     }
     
     #canvasContainer {
-        width: 95vw;
+        width: 98vw;
         height: 60vh;
         margin: 16px auto;
         touch-action: none;
