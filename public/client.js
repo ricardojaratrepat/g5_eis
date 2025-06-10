@@ -5,15 +5,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const backgroundCanvas = document.getElementById('backgroundCanvas');
   const backgroundCtx = backgroundCanvas.getContext('2d');
   const ctx = canvas.getContext('2d');
+  const overlayCanvas = document.createElement('canvas');
+  const overlayCtx = overlayCanvas.getContext('2d');
+  overlayCanvas.style.position = 'absolute';
+  overlayCanvas.style.top = '0';
+  overlayCanvas.style.left = '0';
+  overlayCanvas.style.pointerEvents = 'none';
+  overlayCanvas.style.zIndex = '4'; 
+  document.getElementById('canvasContainer').appendChild(overlayCanvas);
   const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
   const eraseBtn = document.getElementById('eraseBtn');
   const rectBtn = document.getElementById('rectBtn');
+  const videoBtn = document.getElementById('videoBtn');
 
   
   let drawing = false;
   let currentMode = 'draw'; // 'draw' or 'erase'
   let lastX, lastY, startRectX, startRectY;
+  let isDrawingRectangle = false;
   
   const drawColor = 'lightgreen';
   const eraseColor = '#FFFFFF'; // White, same as canvas background
@@ -21,21 +31,58 @@ document.addEventListener('DOMContentLoaded', () => {
   const eraserSize = 20;
 
   // Canvas dimensions
-  canvas.width = window.innerWidth * 0.9;
-  canvas.height = window.innerHeight * 0.8;
-  backgroundCanvas.width = canvas.width;
-  backgroundCanvas.height = canvas.height;
+  function setupCanvas() {
+    const container = document.getElementById('canvasContainer');
+    const containerRect = container.getBoundingClientRect();
+    
+    const width = containerRect.width;
+    const height = containerRect.height;
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    canvas.width = width * devicePixelRatio;
+    canvas.height = height * devicePixelRatio;
+    backgroundCanvas.width = width * devicePixelRatio;
+    backgroundCanvas.height = height * devicePixelRatio;
+    overlayCanvas.width = width * devicePixelRatio;
+    overlayCanvas.height = height * devicePixelRatio;
+    
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    backgroundCanvas.style.width = width + 'px';
+    backgroundCanvas.style.height = height + 'px';
+    overlayCanvas.style.width = width + 'px';
+    overlayCanvas.style.height = height + 'px';
+    
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    backgroundCtx.scale(devicePixelRatio, devicePixelRatio);
+    overlayCtx.scale(devicePixelRatio, devicePixelRatio);
+    
+    canvas.displayWidth = width;
+    canvas.displayHeight = height;
+    canvas.scaleFactor = devicePixelRatio;
+    overlayCanvas.displayWidth = width;
+    overlayCanvas.displayHeight = height;
+  }
+
+  // Initial setup - hide video background by default
+  setupCanvas();
+  document.getElementById('videoBackground').style.display = 'none';
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    setupCanvas();
+    // Request redraw from server
+    sendMessage('REQUEST_HISTORY', {});
+  });
 
   function setBackgroundImage(src) {
     const img = new Image();
     img.onload = () => {
-      backgroundCtx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
-      backgroundCtx.drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+      backgroundCtx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+      backgroundCtx.drawImage(img, 0, 0, canvas.displayWidth, canvas.displayHeight);
     };
     img.src = src;
   }
-
-
 
   // Admin variables
   let isAdmin = false;
@@ -45,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     drawBtn.classList.toggle('active', newMode === 'draw');
     eraseBtn.classList.toggle('active', newMode === 'erase');
     rectBtn.classList.toggle('active', newMode === 'rectangle');
-    console.log("Mode set to:", currentMode);
+    console.log("Modo establecido a:", currentMode);
   }
 
   drawBtn.addEventListener('click', () => setMode('draw'));
@@ -110,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-
   function drawRect(x, y, width, height, color, lineWidth, emit = false) {
     ctx.beginPath();
     ctx.strokeStyle = color;
@@ -129,17 +175,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function drawPreviewRect(startX, startY, currentX, currentY) {
+    const width = currentX - startX;
+    const height = currentY - startY;
+    
+    // Clear the overlay canvas
+    overlayCtx.clearRect(0, 0, overlayCanvas.displayWidth, overlayCanvas.displayHeight);
+    
+    // Draw preview rectangle with dashed line
+    overlayCtx.save();
+    overlayCtx.setLineDash([5, 5]);
+    overlayCtx.strokeStyle = drawColor;
+    overlayCtx.lineWidth = lineWidth;
+    overlayCtx.globalAlpha = 0.7;
+    overlayCtx.strokeRect(startX, startY, width, height);
+    overlayCtx.restore();
+  }
+
+  function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.displayWidth / rect.width;
+    const scaleY = canvas.displayHeight / rect.height;
+    
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
   canvas.addEventListener('mousedown', (e) => {
     if (!isAdmin) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const x = pos.x;
+    const y = pos.y;
 
     drawing = true;
 
     if (currentMode === 'rectangle') {
       startRectX = x;
       startRectY = y;
+      isDrawingRectangle = true;
     } else {
       lastX = x;
       lastY = y;
@@ -150,38 +225,43 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   canvas.addEventListener('mousemove', (e) => {
-    if (!isAdmin) return; // Only allow drawing if admin
+    if (!isAdmin) return;
     if (!drawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const currentX = pos.x;
+    const currentY = pos.y;
 
     if (currentMode === 'draw') {
       drawLine(lastX, lastY, currentX, currentY, drawColor, lineWidth, true, false);
     } else if (currentMode === 'erase') {
       drawLine(lastX, lastY, currentX, currentY, eraseColor, eraserSize, true, true);
+    } else if (currentMode === 'rectangle' && isDrawingRectangle) {
+      drawPreviewRect(startRectX, startRectY, currentX, currentY);
     }
     lastX = currentX;
     lastY = currentY;
   });
 
   canvas.addEventListener('mouseup', (e) => {
-  if (!isAdmin || !drawing) return;
-  drawing = false;
+    if (!isAdmin || !drawing) return;
+    drawing = false;
 
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+    const pos = getMousePos(e);
+    const x = pos.x;
+    const y = pos.y;
 
-  console.log('mouseup mode:', currentMode); // DEBUG
-
-  if (currentMode === 'rectangle') {
-    const width = x - startRectX;
-    const height = y - startRectY;
-    console.log('Rectángulo capturado:', { x: startRectX, y: startRectY, width, height }); // DEBUG
-    drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
-  }
-});
+    if (currentMode === 'rectangle' && isDrawingRectangle) {
+      const width = x - startRectX;
+      const height = y - startRectY;
+      
+      // Clear preview and draw final rectangle
+      overlayCtx.clearRect(0, 0, overlayCanvas.displayWidth, overlayCanvas.displayHeight);
+      
+      // Draw final rectangle
+      drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);
+      isDrawingRectangle = false;
+    }
+  });
 
   canvas.addEventListener('mouseout', () => {
     // Optional: stop drawing if mouse leaves canvas
@@ -190,7 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Socket event listeners
   socket.on('userCount', (count) => {
-    userCountDisplay.textContent = `Users: ${count}`;
+    const counterText = document.querySelector('.counter-text');
+    if (counterText) {
+      counterText.textContent = `Usuarios: ${count}`;
+    } else {
+      userCountDisplay.textContent = `Usuarios: ${count}`;
+    }
   });
 
   socket.on('draw', (data) => {
@@ -206,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
     drawRect(data.x, data.y, data.width, data.height, data.color, data.lineWidth, false);
   });
 
-
   socket.on('erase', (data) => {
     if (data.isEraser && data.hasOwnProperty('size')) { // Check if it's a square eraser action
       eraseSquare(data.x + data.size / 2, data.y + data.size / 2, data.size, false);
@@ -215,10 +299,143 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function extractVideoId(url) {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  }
+
+  function setVideoBackground(videoId) {
+    const iframe = document.getElementById('youtubeVideo');
+    const videoBackground = document.getElementById('videoBackground');
+    
+    if (videoId) {
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&modestbranding=1&start=0&end=0`;
+      videoBackground.style.display = 'block';
+    } else {
+      iframe.src = '';
+      videoBackground.style.display = 'none';
+    }
+  }
+
+  // Admin functionality
+  document.getElementById('adminBtn').addEventListener('click', () => {
+      document.getElementById('adminLogin').classList.remove('hidden');
+  });
+
+  document.getElementById('submitAdmin').addEventListener('click', () => {
+    const code = document.getElementById('adminCode').value;
+    if (code === '1234') { // Cambia este código según necesites
+        isAdmin = true;
+        showSuccessNotification();
+        document.getElementById('adminLogin').classList.add('hidden');
+        document.getElementById('adminBtn').classList.add('hidden');
+        document.getElementById('adminCode').value = '';
+        document.getElementById('toolbar_button').classList.remove('hidden');
+    } else {
+        alert('Código incorrecto. Por favor, inténtalo de nuevo.');
+    }
+  });
+
+  document.getElementById('closeAdminLogin').addEventListener('click', () => {
+    document.getElementById('adminLogin').classList.add('hidden');
+  });
+
+  const bgBtn = document.getElementById('bgBtn');
+
+  bgBtn.addEventListener('click', () => {
+    // Create a temporary file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const imageDataURL = event.target.result;
+        setBackgroundImage(imageDataURL);
+
+        // Send to other users
+        socket.emit('message', {
+          type: 'SET_BACKGROUND',
+          payload: { src: imageDataURL }
+        });
+      };
+      reader.readAsDataURL(file);
+      
+      // Clean up the temporary input
+      document.body.removeChild(fileInput);
+    });
+    
+    // Add to DOM temporarily and trigger click
+    document.body.appendChild(fileInput);
+    fileInput.click();
+  });
+
+  // Video management
+  videoBtn.addEventListener('click', () => {
+    document.getElementById('videoModal').classList.remove('hidden');
+  });
+
+  document.getElementById('closeVideoModal').addEventListener('click', () => {
+    document.getElementById('videoModal').classList.add('hidden');
+  });
+
+  document.getElementById('setVideo').addEventListener('click', () => {
+    const url = document.getElementById('videoUrl').value;
+    if (!url) {
+      alert('Por favor, ingresa una URL de YouTube válida.');
+      return;
+    }
+    
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      alert('URL de YouTube no válida. Por favor, verifica el enlace.');
+      return;
+    }
+
+    setVideoBackground(videoId);
+    sendMessage('SET_VIDEO', { videoId });
+    document.getElementById('videoModal').classList.add('hidden');
+    document.getElementById('videoUrl').value = '';
+  });
+
+  document.getElementById('removeVideo').addEventListener('click', () => {
+    setVideoBackground(null);
+    sendMessage('SET_VIDEO', { videoId: null });
+    document.getElementById('videoModal').classList.add('hidden');
+    document.getElementById('videoUrl').value = '';
+  });
+
+  socket.on('setVideo', (data) => {
+    setVideoBackground(data.videoId);
+  });
+
   socket.on('drawingHistory', (history) => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before redrawing history
+    // Store history in sessionStorage for preview functionality
+    sessionStorage.setItem('drawingHistory', JSON.stringify(history));
+    
+    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+    
+    // First, apply any video background from history
+    const videoItem = history.find(item => item.type === 'SET_VIDEO');
+    if (videoItem) {
+      setVideoBackground(videoItem.payload.videoId);
+    }
+    
+    // Then, apply any background image from history
+    const backgroundItem = history.find(item => item.type === 'SET_BACKGROUND');
+    if (backgroundItem) {
+      setBackgroundImage(backgroundItem.payload.src);
+    }
+    
+    // Then draw all other elements
     history.forEach(item => {
-      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.isEraser && item.hasOwnProperty('x0'))) {
+      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
         drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
       } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
         eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
@@ -231,49 +448,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Request drawing history when connected
   sendMessage('REQUEST_HISTORY', {});
 
-  //Admin functionality
-  document.getElementById('adminBtn').addEventListener('click', () => {
-      document.getElementById('adminLogin').classList.remove('hidden');
-  });
-
-  document.getElementById('submitAdmin').addEventListener('click', () => {
-    const code = document.getElementById('adminCode').value;
-    if (code === '1234') { // Cambia este código según necesites
-        isAdmin = true;
-        alert('Entraste como administrador');
-        document.getElementById('adminLogin').classList.add('hidden');
-        document.getElementById('adminBtn').classList.add('hidden');
-        document.getElementById('adminCode').value = '';
-        document.getElementById('toolbar_button').classList.remove('hidden');
-    } else {
-        alert('Código incorrecto');
-    }
-  });
-
-  document.getElementById('closeAdminLogin').addEventListener('click', () => {
-    document.getElementById('adminLogin').classList.add('hidden');
-  });
-
-  const bgInput = document.getElementById('bgInput');
-
-  bgInput.classList.remove('hidden');
-
-  bgInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const imageDataURL = event.target.result;
-      setBackgroundImage(imageDataURL);
-
-      // (Opcional) enviar a otros usuarios
-      socket.emit('message', {
-        type: 'SET_BACKGROUND',
-        payload: { src: imageDataURL }
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+  function showSuccessNotification() {
+    const notification = document.getElementById('successNotification');
+    notification.classList.remove('hidden');
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideOutRight 0.5s ease-in';
+      setTimeout(() => {
+        notification.classList.add('hidden');
+        notification.style.animation = '';
+      }, 500);
+    }, 4000);
+  }
 
   socket.on('setBackground', (data) => {
     setBackgroundImage(data.src);

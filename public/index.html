@@ -1,43 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collaborative Whiteboard</title>
+    <title>Pizarra Colaborativa - LIVEPARK</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>    
     <div class="toolbar">
         <div class="toolbar-left">
-            <button class="opinion-button" onclick="location.href='https://forms.gle/Rn5eazbSienLCYcg7'">Dar mi opinión</button>
+            <h1 class="app-title">🚗 LIVEPARK</h1>
+            <button class="opinion-button" onclick="location.href='https://forms.gle/Rn5eazbSienLCYcg7'">
+                📝 Dar mi opinión
+            </button>
         </div>
         
         <div id="toolbar_button" class="toolbar-center hidden">
-            <button id="drawBtn">Draw</button>
-            <button id="rectBtn">Rectangle</button>
-            <button id="eraseBtn">Erase</button>
-            <input type="file" id="bgInput" accept="image/*" class="hidden">
+            <button id="drawBtn" class="tool-btn" aria-label="Dibujar con lápiz">
+                <span class="btn-icon">✏️</span>
+                Dibujar
+            </button>
+            <button id="rectBtn" class="tool-btn" aria-label="Dibujar un rectángulo">
+                <span class="btn-icon">⬜</span>
+                Rectángulo
+            </button>
+            <button id="eraseBtn" class="tool-btn" aria-label="Borrar contenido">
+                <span class="btn-icon">🗑️</span>
+                Borrar
+            </button>
+            <button id="bgBtn" class="tool-btn" aria-label="Cambiar fondo">
+                <span class="btn-icon">🖼️</span>
+                Fondo
+            </button>
+            <button id="videoBtn" class="tool-btn" aria-label="Cambiar video">
+                <span class="btn-icon">🎥</span>
+                Video
+            </button>
         </div>
         
-        <div id="userCount">
-            Users: 0
+        <div id="userCount" class="user-counter">
+            <span class="counter-icon">👥</span>
+            <span class="counter-text">Usuarios: 0</span>
         </div>
     </div>
 
-    <!-- Aquí van los dos canvas apilados -->
     <div id="canvasContainer">
+        <div id="videoBackground" class="video-background" style="display: none;">
+            <iframe id="youtubeVideo" 
+                    src="" 
+                    frameborder="0" 
+                    allow="autoplay; encrypted-media" 
+                    allowfullscreen>
+            </iframe>
+        </div>
         <canvas id="backgroundCanvas"></canvas>
         <canvas id="whiteboard"></canvas>
     </div>
 
-    <button id="adminBtn" class="admin-button">Iniciar como admin</button>
+    <button id="adminBtn" class="admin-button">
+        🔑 Iniciar como administrador
+    </button>
 
     <div id="adminLogin" class="admin-login hidden">
         <div class="login-box">
-            <button class="close-btn" id="closeAdminLogin">x</button>
-            <label for="adminCode">Código de administrador:</label>
-            <input type="password" id="adminCode" placeholder="Escribe el código">
-            <button id="submitAdmin">Entrar</button>
+            <button class="close-btn" id="closeAdminLogin">✕</button>
+            <h3>Acceso de Administrador</h3>
+            <p>Ingresa el código para acceder a las herramientas de dibujo</p>
+            <input type="password" id="adminCode" placeholder="Código de administrador">
+            <button id="submitAdmin" class="submit-btn">Acceder</button>
+        </div>
+    </div>
+
+    <div id="successNotification" class="success-notification hidden">
+        <div class="notification-content">
+            <div class="notification-icon">🎉</div>
+            <div class="notification-text">
+                <h4>¡Bienvenido, Administrador!</h4>
+                <p>Ahora tienes acceso completo a las herramientas de dibujo</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="videoModal" class="admin-login hidden">
+        <div class="login-box">
+            <button class="close-btn" id="closeVideoModal">✕</button>
+            <h3>Configurar Video de Fondo</h3>
+            <p>Ingresa una URL de YouTube para usar como fondo</p>
+            <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+            <div class="video-controls">
+                <button id="setVideo" class="submit-btn">Establecer Video</button>
+                <button id="removeVideo" class="remove-btn">Quitar Video</button>
+            </div>
         </div>
     </div>
 

@@ -12,12 +12,16 @@ const PORT = process.env.PORT || 8000;
 app.use(express.static('public'));
 
 let connectedUsers = 0;
+const MAX_HISTORY_LENGTH = 1000; // Maximum number of entries in the history
 let drawingHistory = [];
 
 // Message Handlers: Each one of these handles a WebSocket Message from the client
 const messageHandlers = {
   NEW_DRAWING: (socket, data) => {
-    drawingHistory.push(data);
+    drawingHistory.push({ type: 'NEW_DRAWING', payload: data });
+    if (drawingHistory.length > MAX_HISTORY_LENGTH) {
+        drawingHistory.shift(); // Remove the oldest entry
+    }
     // Broadcast the message to all connected clients (except the sender)
     socket.broadcast.emit('draw', data);
   },
@@ -39,6 +43,15 @@ const messageHandlers = {
   SET_BACKGROUND: (socket, data) => {
     drawingHistory.push({ type: 'SET_BACKGROUND', payload: data });
     socket.broadcast.emit('setBackground', data);
+  },
+
+  SET_VIDEO: (socket, data) => {
+    // Remove any existing video entries and add the new one
+    drawingHistory = drawingHistory.filter(item => item.type !== 'SET_VIDEO');
+    if (data.videoId) {
+      drawingHistory.push({ type: 'SET_VIDEO', payload: data });
+    }
+    socket.broadcast.emit('setVideo', data);
   }
   
   // More messages go here as the app grows
@@ -47,7 +60,7 @@ const messageHandlers = {
 io.on('connection', (socket) => {
   connectedUsers++;
   io.emit('userCount', connectedUsers);
-  console.log('New client connected. Users:', connectedUsers);
+  console.log('Nuevo cliente conectado. Usuarios:', connectedUsers);
 
   // Send drawing history to new client
   messageHandlers.REQUEST_HISTORY(socket);
@@ -59,7 +72,7 @@ io.on('connection', (socket) => {
     if (handler) {
       handler(socket, payload);
     } else {
-      console.log(`No handler for message type: ${type}`);
+      console.log(`No hay manejador para el tipo de mensaje: ${type}`);
     }
   });
 
@@ -67,11 +80,11 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     connectedUsers--;
     io.emit('userCount', connectedUsers);
-    console.log('Client disconnected. Users:', connectedUsers);
+    console.log('Cliente desconectado. Usuarios:', connectedUsers);
   });
 
 })
 
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 })
