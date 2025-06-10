@@ -34,6 +34,11 @@ const messageHandlers = {
   DRAW_RECTANGLE: (socket, data) => {
     drawingHistory.push({ type: 'DRAW_RECTANGLE', payload: data });
     socket.broadcast.emit('drawRectangle', data);
+  },
+
+  SET_BACKGROUND: (socket, data) => {
+    drawingHistory.push({ type: 'SET_BACKGROUND', payload: data });
+    socket.broadcast.emit('setBackground', data);
   }
   
   // More messages go here as the app grows
