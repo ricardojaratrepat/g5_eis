@@ -5,6 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const backgroundCanvas = document.getElementById('backgroundCanvas');
   const backgroundCtx = backgroundCanvas.getContext('2d');
   const ctx = canvas.getContext('2d');
+  const overlayCanvas = document.createElement('canvas');
+  const overlayCtx = overlayCanvas.getContext('2d');
+  overlayCanvas.style.position = 'absolute';
+  overlayCanvas.style.top = canvas.style.top;
+  overlayCanvas.style.left = canvas.style.left;
+  overlayCanvas.style.pointerEvents = 'none';
+  document.getElementById('canvasContainer').appendChild(overlayCanvas);
   const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
   const eraseBtn = document.getElementById('eraseBtn');
@@ -26,32 +33,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('canvasContainer');
     const containerRect = container.getBoundingClientRect();
     
-    // Set canvas size to match container
     const width = containerRect.width;
     const height = containerRect.height;
-    
-    // Set actual canvas size (accounting for device pixel ratio)
     const devicePixelRatio = window.devicePixelRatio || 1;
     
     canvas.width = width * devicePixelRatio;
     canvas.height = height * devicePixelRatio;
     backgroundCanvas.width = width * devicePixelRatio;
     backgroundCanvas.height = height * devicePixelRatio;
+    overlayCanvas.width = width * devicePixelRatio;
+    overlayCanvas.height = height * devicePixelRatio;
     
-    // Set display size
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
     backgroundCanvas.style.width = width + 'px';
     backgroundCanvas.style.height = height + 'px';
+    overlayCanvas.style.width = width + 'px';
+    overlayCanvas.style.height = height + 'px';
     
-    // Scale context for high-DPI displays
     ctx.scale(devicePixelRatio, devicePixelRatio);
     backgroundCtx.scale(devicePixelRatio, devicePixelRatio);
+    overlayCtx.scale(devicePixelRatio, devicePixelRatio);
     
-    // Store canvas dimensions for coordinate calculations
     canvas.displayWidth = width;
     canvas.displayHeight = height;
     canvas.scaleFactor = devicePixelRatio;
+    overlayCanvas.displayWidth = width;
+    overlayCanvas.displayHeight = height;
   }
 
   // Initial setup
@@ -168,29 +176,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const width = currentX - startX;
     const height = currentY - startY;
     
-    // Clear the entire canvas and redraw everything
-    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
-    
-    // Redraw all history first
-    const history = JSON.parse(sessionStorage.getItem('drawingHistory') || '[]');
-    history.forEach(item => {
-      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
-        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
-      } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
-        eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
-      } else if (item.type === 'DRAW_RECTANGLE') {
-        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
-      }
-    });
+    // Clear the overlay canvas
+    overlayCtx.clearRect(0, 0, overlayCanvas.displayWidth, overlayCanvas.displayHeight);
     
     // Draw preview rectangle with dashed line
-    ctx.save();
-    ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = drawColor;
-    ctx.lineWidth = lineWidth;
-    ctx.globalAlpha = 0.7;
-    ctx.strokeRect(startX, startY, width, height);
-    ctx.restore();
+    overlayCtx.save();
+    overlayCtx.setLineDash([5, 5]);
+    overlayCtx.strokeStyle = drawColor;
+    overlayCtx.lineWidth = lineWidth;
+    overlayCtx.globalAlpha = 0.7;
+    overlayCtx.strokeRect(startX, startY, width, height);
+    overlayCtx.restore();
   }
 
   function getMousePos(e) {
@@ -256,19 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const height = y - startRectY;
       
       // Clear preview and draw final rectangle
-      ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
-      
-      // Redraw history
-      const history = JSON.parse(sessionStorage.getItem('drawingHistory') || '[]');
-      history.forEach(item => {
-        if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
-          drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
-        } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
-          eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
-        } else if (item.type === 'DRAW_RECTANGLE') {
-          drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
-        }
-      });
+      overlayCtx.clearRect(0, 0, overlayCanvas.displayWidth, overlayCanvas.displayHeight);
       
       // Draw final rectangle
       drawRect(startRectX, startRectY, width, height, drawColor, lineWidth, true);

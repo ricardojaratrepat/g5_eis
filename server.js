@@ -12,12 +12,16 @@ const PORT = process.env.PORT || 8000;
 app.use(express.static('public'));
 
 let connectedUsers = 0;
+const MAX_HISTORY_LENGTH = 1000; // Maximum number of entries in the history
 let drawingHistory = [];
 
 // Message Handlers: Each one of these handles a WebSocket Message from the client
 const messageHandlers = {
   NEW_DRAWING: (socket, data) => {
     drawingHistory.push(data);
+    if (drawingHistory.length > MAX_HISTORY_LENGTH) {
+        drawingHistory.shift(); // Remove the oldest entry
+    }
     // Broadcast the message to all connected clients (except the sender)
     socket.broadcast.emit('draw', data);
   },
