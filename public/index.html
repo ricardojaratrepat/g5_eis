@@ -33,6 +33,10 @@
                 <span class="btn-icon">🖼️</span>
                 Fondo
             </button>
+            <button id="videoBtn" class="tool-btn" aria-label="Cambiar video">
+                <span class="btn-icon">🎥</span>
+                Video
+            </button>
         </div>
         
         <div id="userCount" class="user-counter">
@@ -42,6 +46,14 @@
     </div>
 
     <div id="canvasContainer">
+        <div id="videoBackground" class="video-background" style="display: none;">
+            <iframe id="youtubeVideo" 
+                    src="" 
+                    frameborder="0" 
+                    allow="autoplay; encrypted-media" 
+                    allowfullscreen>
+            </iframe>
+        </div>
         <canvas id="backgroundCanvas"></canvas>
         <canvas id="whiteboard"></canvas>
     </div>
@@ -66,6 +78,19 @@
             <div class="notification-text">
                 <h4>¡Bienvenido, Administrador!</h4>
                 <p>Ahora tienes acceso completo a las herramientas de dibujo</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="videoModal" class="admin-login hidden">
+        <div class="login-box">
+            <button class="close-btn" id="closeVideoModal">✕</button>
+            <h3>Configurar Video de Fondo</h3>
+            <p>Ingresa una URL de YouTube para usar como fondo</p>
+            <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+            <div class="video-controls">
+                <button id="setVideo" class="submit-btn">Establecer Video</button>
+                <button id="removeVideo" class="remove-btn">Quitar Video</button>
             </div>
         </div>
     </div>

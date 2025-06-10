@@ -11,11 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
   overlayCanvas.style.top = '0';
   overlayCanvas.style.left = '0';
   overlayCanvas.style.pointerEvents = 'none';
+  overlayCanvas.style.zIndex = '4'; 
   document.getElementById('canvasContainer').appendChild(overlayCanvas);
   const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
   const eraseBtn = document.getElementById('eraseBtn');
   const rectBtn = document.getElementById('rectBtn');
+  const videoBtn = document.getElementById('videoBtn');
 
   
   let drawing = false;
@@ -62,8 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     overlayCanvas.displayHeight = height;
   }
 
-  // Initial setup
+  // Initial setup - hide video background by default
   setupCanvas();
+  document.getElementById('videoBackground').style.display = 'none';
 
   // Resize handler
   window.addEventListener('resize', () => {
@@ -296,47 +299,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  socket.on('drawingHistory', (history) => {
-    // Store history in sessionStorage for preview functionality
-    sessionStorage.setItem('drawingHistory', JSON.stringify(history));
-    
-    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
-    // First, apply any background image from history
-    const backgroundItem = history.find(item => item.type === 'SET_BACKGROUND');
-    if (backgroundItem) {
-      setBackgroundImage(backgroundItem.payload.src);
-    }
-    
-    // Then draw all other elements
-    history.forEach(item => {
-      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
-        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
-      } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
-        eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
-      } else if (item.type === 'DRAW_RECTANGLE') {
-        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
-      }
-    });
-  });
-
-  // Request drawing history when connected
-  sendMessage('REQUEST_HISTORY', {});
-
-  function showSuccessNotification() {
-    const notification = document.getElementById('successNotification');
-    notification.classList.remove('hidden');
-    
-    // Auto-hide after 4 seconds
-    setTimeout(() => {
-      notification.style.animation = 'slideOutRight 0.5s ease-in';
-      setTimeout(() => {
-        notification.classList.add('hidden');
-        notification.style.animation = '';
-      }, 500);
-    }, 4000);
+  function extractVideoId(url) {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
   }
 
-  //Admin functionality
+  function setVideoBackground(videoId) {
+    const iframe = document.getElementById('youtubeVideo');
+    const videoBackground = document.getElementById('videoBackground');
+    
+    if (videoId) {
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&modestbranding=1&start=0&end=0`;
+      videoBackground.style.display = 'block';
+    } else {
+      iframe.src = '';
+      videoBackground.style.display = 'none';
+    }
+  }
+
+  // Admin functionality
   document.getElementById('adminBtn').addEventListener('click', () => {
       document.getElementById('adminLogin').classList.remove('hidden');
   });
@@ -393,6 +375,92 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(fileInput);
     fileInput.click();
   });
+
+  // Video management
+  videoBtn.addEventListener('click', () => {
+    document.getElementById('videoModal').classList.remove('hidden');
+  });
+
+  document.getElementById('closeVideoModal').addEventListener('click', () => {
+    document.getElementById('videoModal').classList.add('hidden');
+  });
+
+  document.getElementById('setVideo').addEventListener('click', () => {
+    const url = document.getElementById('videoUrl').value;
+    if (!url) {
+      alert('Por favor, ingresa una URL de YouTube válida.');
+      return;
+    }
+    
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      alert('URL de YouTube no válida. Por favor, verifica el enlace.');
+      return;
+    }
+
+    setVideoBackground(videoId);
+    sendMessage('SET_VIDEO', { videoId });
+    document.getElementById('videoModal').classList.add('hidden');
+    document.getElementById('videoUrl').value = '';
+  });
+
+  document.getElementById('removeVideo').addEventListener('click', () => {
+    setVideoBackground(null);
+    sendMessage('SET_VIDEO', { videoId: null });
+    document.getElementById('videoModal').classList.add('hidden');
+    document.getElementById('videoUrl').value = '';
+  });
+
+  socket.on('setVideo', (data) => {
+    setVideoBackground(data.videoId);
+  });
+
+  socket.on('drawingHistory', (history) => {
+    // Store history in sessionStorage for preview functionality
+    sessionStorage.setItem('drawingHistory', JSON.stringify(history));
+    
+    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+    
+    // First, apply any video background from history
+    const videoItem = history.find(item => item.type === 'SET_VIDEO');
+    if (videoItem) {
+      setVideoBackground(videoItem.payload.videoId);
+    }
+    
+    // Then, apply any background image from history
+    const backgroundItem = history.find(item => item.type === 'SET_BACKGROUND');
+    if (backgroundItem) {
+      setBackgroundImage(backgroundItem.payload.src);
+    }
+    
+    // Then draw all other elements
+    history.forEach(item => {
+      if (item.type === 'NEW_DRAWING' || (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('x0'))) {
+        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, item.payload.isEraser);
+      } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
+        eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
+      } else if (item.type === 'DRAW_RECTANGLE') {
+        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+      }
+    });
+  });
+
+  // Request drawing history when connected
+  sendMessage('REQUEST_HISTORY', {});
+
+  function showSuccessNotification() {
+    const notification = document.getElementById('successNotification');
+    notification.classList.remove('hidden');
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideOutRight 0.5s ease-in';
+      setTimeout(() => {
+        notification.classList.add('hidden');
+        notification.style.animation = '';
+      }, 500);
+    }, 4000);
+  }
 
   socket.on('setBackground', (data) => {
     setBackgroundImage(data.src);

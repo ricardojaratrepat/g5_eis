@@ -286,7 +286,41 @@ body {
     touch-action: none; /* Prevent touch scrolling on mobile */
 }
 
-#backgroundCanvas,
+.video-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.video-background iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 56.25vw; /* 16:9 aspect ratio */
+    min-height: 100vh;
+    min-width: 177.77vh; /* 16:9 aspect ratio */
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+#backgroundCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: pixelated;
+    z-index: 2;
+}
+
 #whiteboard {
     position: absolute;
     top: 0;
@@ -297,6 +331,7 @@ body {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: -moz-crisp-edges;
     image-rendering: pixelated;
+    z-index: 3;
 }
 
 .success-notification {
@@ -340,6 +375,41 @@ body {
     margin: 0;
     font-size: 14px;
     opacity: 0.9;
+}
+
+.video-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.remove-btn {
+    flex: 1;
+    padding: 12px;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+    background: var(--danger-hover);
+    transform: translateY(-1px);
+}
+
+.submit-btn {
+    flex: 1;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 @keyframes slideInRight {
@@ -423,5 +493,12 @@ body {
     #backgroundCanvas,
     #whiteboard {
         cursor: crosshair;
+    }
+    
+    .video-background iframe {
+        width: 100vw;
+        height: 56.25vw;
+        min-height: 100vh;
+        min-width: 177.77vh;
     }
 }

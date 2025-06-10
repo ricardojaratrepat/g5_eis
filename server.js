@@ -43,6 +43,15 @@ const messageHandlers = {
   SET_BACKGROUND: (socket, data) => {
     drawingHistory.push({ type: 'SET_BACKGROUND', payload: data });
     socket.broadcast.emit('setBackground', data);
+  },
+
+  SET_VIDEO: (socket, data) => {
+    // Remove any existing video entries and add the new one
+    drawingHistory = drawingHistory.filter(item => item.type !== 'SET_VIDEO');
+    if (data.videoId) {
+      drawingHistory.push({ type: 'SET_VIDEO', payload: data });
+    }
+    socket.broadcast.emit('setVideo', data);
   }
   
   // More messages go here as the app grows
