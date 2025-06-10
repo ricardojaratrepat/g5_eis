@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const socket = io();
   
   const canvas = document.getElementById('whiteboard');
+  const backgroundCanvas = document.getElementById('backgroundCanvas');
+  const backgroundCtx = backgroundCanvas.getContext('2d');
   const ctx = canvas.getContext('2d');
   const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
@@ -21,6 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Canvas dimensions
   canvas.width = window.innerWidth * 0.9;
   canvas.height = window.innerHeight * 0.8;
+  backgroundCanvas.width = canvas.width;
+  backgroundCanvas.height = canvas.height;
+
+  function setBackgroundImage(src) {
+    const img = new Image();
+    img.onload = () => {
+      backgroundCtx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+      backgroundCtx.drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+    };
+    img.src = src;
+  }
+
+
 
   // Admin variables
   let isAdmin = false;
@@ -44,14 +59,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function drawLine(x0, y0, x1, y1, color, width, emit = false, isEraser = false) {
+    ctx.save();
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
-    ctx.lineCap = 'round'; // Makes lines smoother
+    ctx.lineCap = 'round';
+    if (isEraser) {
+      ctx.globalCompositeOperation = 'destination-out';
+    }
     ctx.stroke();
     ctx.closePath();
+    ctx.restore();
 
     if (emit) {
       const drawingObject = {
@@ -69,23 +89,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function eraseSquare(x, y, size, emit = false) {
     const halfSize = size / 2;
-    ctx.fillStyle = eraseColor;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,1)'; // cualquier color, no importa en destination-out
     ctx.fillRect(x - halfSize, y - halfSize, size, size);
+    ctx.restore();
 
     if (emit) {
       const eraseObject = {
-        type: 'ERASE_DRAWING', // Specific type for erase action
+        type: 'ERASE_DRAWING',
         payload: {
-          x: x - halfSize, // Store top-left corner for consistency if needed
+          x: x - halfSize,
           y: y - halfSize,
           size,
-          color: eraseColor, // Eraser uses background color
           isEraser: true
         }
       };
       sendMessage(eraseObject.type, eraseObject.payload);
     }
   }
+
 
   function drawRect(x, y, width, height, color, lineWidth, emit = false) {
     ctx.beginPath();
@@ -230,5 +254,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('adminLogin').classList.add('hidden');
   });
 
+  const bgInput = document.getElementById('bgInput');
 
+  bgInput.classList.remove('hidden');
+
+  bgInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      const imageDataURL = event.target.result;
+      setBackgroundImage(imageDataURL);
+
+      // (Opcional) enviar a otros usuarios
+      socket.emit('message', {
+        type: 'SET_BACKGROUND',
+        payload: { src: imageDataURL }
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  socket.on('setBackground', (data) => {
+    setBackgroundImage(data.src);
+  });
 });

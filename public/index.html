@@ -9,13 +9,14 @@
 <body>    
     <div class="toolbar">
         <div class="toolbar-left">
-            <button class="opinion-button" onclick="location.href='form.html'">Dar mi opinión</button>
+            <button class="opinion-button" onclick="location.href='https://forms.gle/Rn5eazbSienLCYcg7'">Dar mi opinión</button>
         </div>
         
         <div id="toolbar_button" class="toolbar-center hidden">
             <button id="drawBtn">Draw</button>
             <button id="rectBtn">Rectangle</button>
             <button id="eraseBtn">Erase</button>
+            <input type="file" id="bgInput" accept="image/*" class="hidden">
         </div>
         
         <div id="userCount">
@@ -23,7 +24,11 @@
         </div>
     </div>
 
-    <canvas id="whiteboard"></canvas>
+    <!-- Aquí van los dos canvas apilados -->
+    <div id="canvasContainer">
+        <canvas id="backgroundCanvas"></canvas>
+        <canvas id="whiteboard"></canvas>
+    </div>
 
     <button id="adminBtn" class="admin-button">Iniciar como admin</button>
 
@@ -35,7 +40,6 @@
             <button id="submitAdmin">Entrar</button>
         </div>
     </div>
-
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
