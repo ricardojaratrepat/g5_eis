@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlayCanvas = document.createElement('canvas');
   const overlayCtx = overlayCanvas.getContext('2d');
   overlayCanvas.style.position = 'absolute';
-  overlayCanvas.style.top = canvas.style.top;
-  overlayCanvas.style.left = canvas.style.left;
+  overlayCanvas.style.top = '0';
+  overlayCanvas.style.left = '0';
   overlayCanvas.style.pointerEvents = 'none';
   document.getElementById('canvasContainer').appendChild(overlayCanvas);
   const userCountDisplay = document.getElementById('userCount');

@@ -18,7 +18,7 @@ let drawingHistory = [];
 // Message Handlers: Each one of these handles a WebSocket Message from the client
 const messageHandlers = {
   NEW_DRAWING: (socket, data) => {
-    drawingHistory.push(data);
+    drawingHistory.push({ type: 'NEW_DRAWING', payload: data });
     if (drawingHistory.length > MAX_HISTORY_LENGTH) {
         drawingHistory.shift(); // Remove the oldest entry
     }
