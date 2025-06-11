@@ -3,23 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const canvas = document.getElementById('whiteboard');
   const backgroundCanvas = document.getElementById('backgroundCanvas');
+  const userCountDisplay = document.getElementById('userCount');
+  
   const backgroundCtx = backgroundCanvas.getContext('2d');
   const ctx = canvas.getContext('2d');
+  
   const overlayCanvas = document.createElement('canvas');
-  const overlayCtx = overlayCanvas.getContext('2d');
   overlayCanvas.style.position = 'absolute';
+  const overlayCtx = overlayCanvas.getContext('2d');
   overlayCanvas.style.top = '0';
   overlayCanvas.style.left = '0';
   overlayCanvas.style.pointerEvents = 'none';
   overlayCanvas.style.zIndex = '4'; 
+  
   document.getElementById('canvasContainer').appendChild(overlayCanvas);
-  const userCountDisplay = document.getElementById('userCount');
   const drawBtn = document.getElementById('drawBtn');
   const eraseBtn = document.getElementById('eraseBtn');
   const rectBtn = document.getElementById('rectBtn');
   const videoBtn = document.getElementById('videoBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const undoBtn = document.getElementById('undoBtn');
 
-  
   let drawing = false;
   let currentMode = 'draw'; // 'draw' or 'erase'
   let lastX, lastY, startRectX, startRectY;
@@ -92,12 +96,25 @@ document.addEventListener('DOMContentLoaded', () => {
     drawBtn.classList.toggle('active', newMode === 'draw');
     eraseBtn.classList.toggle('active', newMode === 'erase');
     rectBtn.classList.toggle('active', newMode === 'rectangle');
+    clearBtn.classList.toggle('active', newMode === 'clear');
+    undoBtn.classList.toggle('active', newMode === 'undo');
     console.log("Modo establecido a:", currentMode);
   }
 
   drawBtn.addEventListener('click', () => setMode('draw'));
   eraseBtn.addEventListener('click', () => setMode('erase'));
   rectBtn.addEventListener('click', () => setMode('rectangle'));
+  clearBtn.addEventListener('click', () => {
+  if (isAdmin && confirm('¿Estás seguro que quieres borrar todo lo dibujado?')) {
+    sendMessage('CLEAR_ALL', {});
+    }
+  });
+  undoBtn.addEventListener('click', () => {
+    if (isAdmin) {
+      sendMessage('UNDO_DRAWING', {});
+    }
+  });
+
   setMode('draw'); // Default mode
 
   // Function to send messages to the server
@@ -299,6 +316,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  socket.on('clearAll', () => {
+      ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+      backgroundCtx.clearRect(0, 0, backgroundCanvas.displayWidth, backgroundCanvas.displayHeight);
+      setVideoBackground(null);
+    });
+
+    socket.on('undoLast', (newHistory) => {
+    ctx.clearRect(0, 0, canvas.displayWidth, canvas.displayHeight);
+    backgroundCtx.clearRect(0, 0, backgroundCanvas.displayWidth, backgroundCanvas.displayHeight);
+
+    // Restaurar fondo si lo había
+    const videoItem = newHistory.find(item => item.type === 'SET_VIDEO');
+    if (videoItem) setVideoBackground(videoItem.payload.videoId);
+    const bgItem = newHistory.find(item => item.type === 'SET_BACKGROUND');
+    if (bgItem) setBackgroundImage(bgItem.payload.src);
+
+    newHistory.forEach(item => {
+      if (item.type === 'NEW_DRAWING') {
+        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, false);
+      } else if (item.type === 'ERASE_DRAWING' && item.payload.hasOwnProperty('x0')) {
+        drawLine(item.payload.x0, item.payload.y0, item.payload.x1, item.payload.y1, item.payload.color, item.payload.width, false, true);
+      } else if (item.type === 'ERASE_DRAWING' && item.payload.hasOwnProperty('size')) {
+        eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
+      } else if (item.type === 'DRAW_RECTANGLE') {
+        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+      }
+    });
+  });
+
   function extractVideoId(url) {
     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
     const match = url.match(regex);
@@ -379,6 +425,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Video management
   videoBtn.addEventListener('click', () => {
     document.getElementById('videoModal').classList.remove('hidden');
+  });
+
+  undoBtn.addEventListener('click', () => {
+    if (isAdmin) {
+      sendMessage('UNDO_LAST', {});
+    }
   });
 
   document.getElementById('closeVideoModal').addEventListener('click', () => {

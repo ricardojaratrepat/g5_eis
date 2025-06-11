@@ -52,8 +52,20 @@ const messageHandlers = {
       drawingHistory.push({ type: 'SET_VIDEO', payload: data });
     }
     socket.broadcast.emit('setVideo', data);
+  },
+  CLEAR_ALL: (socket) => {
+    drawingHistory = []; // Limpiar historial
+    io.emit('clearAll'); // Notificar a todos 
+  }, 
+
+  UNDO_LAST: (socket) => {
+  // Quita el último elemento del historial
+  const last = drawingHistory.pop();
+  if (last) {
+    io.emit('undoLast', drawingHistory); // Enviamos el nuevo historial a todos
+    }
   }
-  
+
   // More messages go here as the app grows
 };
 
