@@ -36,37 +36,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Canvas dimensions
   function setupCanvas() {
-    const container = document.getElementById('canvasContainer');
-    const containerRect = container.getBoundingClientRect();
-    
-    const width = containerRect.width;
-    const height = containerRect.height;
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    
-    canvas.width = width * devicePixelRatio;
-    canvas.height = height * devicePixelRatio;
-    backgroundCanvas.width = width * devicePixelRatio;
-    backgroundCanvas.height = height * devicePixelRatio;
-    overlayCanvas.width = width * devicePixelRatio;
-    overlayCanvas.height = height * devicePixelRatio;
-    
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-    backgroundCanvas.style.width = width + 'px';
-    backgroundCanvas.style.height = height + 'px';
-    overlayCanvas.style.width = width + 'px';
-    overlayCanvas.style.height = height + 'px';
-    
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    backgroundCtx.scale(devicePixelRatio, devicePixelRatio);
-    overlayCtx.scale(devicePixelRatio, devicePixelRatio);
-    
-    canvas.displayWidth = width;
-    canvas.displayHeight = height;
-    canvas.scaleFactor = devicePixelRatio;
-    overlayCanvas.displayWidth = width;
-    overlayCanvas.displayHeight = height;
-  }
+  const container = document.getElementById('canvasContainer');
+  const containerRect = container.getBoundingClientRect();
+
+  const width = containerRect.width;
+  const height = containerRect.height;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+
+  // Reset transform before resizing
+  [ctx, backgroundCtx, overlayCtx].forEach(c => {
+    c.setTransform(1, 0, 0, 1, 0, 0); // reset any scale
+  });
+
+  // Set physical size
+  canvas.width = width * devicePixelRatio;
+  canvas.height = height * devicePixelRatio;
+  backgroundCanvas.width = width * devicePixelRatio;
+  backgroundCanvas.height = height * devicePixelRatio;
+  overlayCanvas.width = width * devicePixelRatio;
+  overlayCanvas.height = height * devicePixelRatio;
+
+  // Set display size
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  backgroundCanvas.style.width = width + 'px';
+  backgroundCanvas.style.height = height + 'px';
+  overlayCanvas.style.width = width + 'px';
+  overlayCanvas.style.height = height + 'px';
+
+  // Apply scale once per resize
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  backgroundCtx.scale(devicePixelRatio, devicePixelRatio);
+  overlayCtx.scale(devicePixelRatio, devicePixelRatio);
+
+  canvas.displayWidth = width;
+  canvas.displayHeight = height;
+  canvas.scaleFactor = devicePixelRatio;
+  overlayCanvas.displayWidth = width;
+  overlayCanvas.displayHeight = height;
+}
+
 
   // Initial setup - hide video background by default
   setupCanvas();
@@ -182,9 +191,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.closePath();
 
     if (emit) {
-      console.log('Enviando rectángulo al servidor:', { x, y, width, height });
       sendMessage('DRAW_RECTANGLE', {
-        x, y, width, height,
+        x: x / canvas.displayWidth,
+        y: y / canvas.displayHeight,
+        width: width / canvas.displayWidth,
+        height: height / canvas.displayHeight,
         color,
         lineWidth,
         isEraser: false
@@ -305,7 +316,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('drawRectangle', (data) => {
-    drawRect(data.x, data.y, data.width, data.height, data.color, data.lineWidth, false);
+    const realX = data.x * canvas.displayWidth;
+    const realY = data.y * canvas.displayHeight;
+    const realWidth = data.width * canvas.displayWidth;
+    const realHeight = data.height * canvas.displayHeight;
+
+    drawRect(realX, realY, realWidth, realHeight, data.color, data.lineWidth, false);
   });
 
   socket.on('erase', (data) => {
@@ -340,7 +356,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (item.type === 'ERASE_DRAWING' && item.payload.hasOwnProperty('size')) {
         eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
       } else if (item.type === 'DRAW_RECTANGLE') {
-        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+        drawRect(
+          item.payload.x * canvas.displayWidth,
+          item.payload.y * canvas.displayHeight,
+          item.payload.width * canvas.displayWidth,
+          item.payload.height * canvas.displayHeight,
+          item.payload.color,
+          item.payload.lineWidth,
+          false
+        );
+        // drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
       }
     });
   });
@@ -492,7 +517,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (item.type === 'ERASE_DRAWING' && item.payload.isEraser && item.payload.hasOwnProperty('size')) {
         eraseSquare(item.payload.x + item.payload.size / 2, item.payload.y + item.payload.size / 2, item.payload.size, false);
       } else if (item.type === 'DRAW_RECTANGLE') {
-        drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+        // drawRect(item.payload.x, item.payload.y, item.payload.width, item.payload.height, item.payload.color, item.payload.lineWidth, false);
+        drawRect(
+          item.payload.x * canvas.displayWidth,
+          item.payload.y * canvas.displayHeight,
+          item.payload.width * canvas.displayWidth,
+          item.payload.height * canvas.displayHeight,
+          item.payload.color,
+          item.payload.lineWidth,
+          false
+        );
       }
     });
   });
